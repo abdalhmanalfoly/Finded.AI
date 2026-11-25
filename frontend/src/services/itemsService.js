@@ -1,0 +1,42 @@
+// Single entry point for data. Uses Supabase when configured, otherwise clearly-labeled SAMPLE data (preview mode).
+import { isConfigured } from '../lib/supabase.js'
+import * as sample from './sampleService.js'
+import * as api from './supabaseService.js'
+
+const impl = isConfigured ? api : sample
+
+export const listItems = (...a) => impl.listItems(...a)
+export const getLatest = (...a) => impl.getLatest(...a)
+export const getItem = (...a) => impl.getItem(...a)
+export const getMatches = (...a) => impl.getMatches(...a)
+export const getDashboard = (...a) => impl.getDashboard(...a)
+export const getAdminData = (...a) => impl.getAdminData(...a)
+export const listAdminPage = (...a) => impl.listAdminPage(...a)
+export const exportMyData = (...a) => impl.exportMyData(...a)
+export const deleteMyAccount = (...a) => impl.deleteMyAccount(...a)
+export const createItem = (...a) => impl.createItem(...a)
+export const updateItem = (...a) => impl.updateItem(...a)
+export const deleteItem = (...a) => impl.deleteItem(...a)
+export const setItemStatus = (...a) => impl.setItemStatus(...a)
+export const removeImage = (...a) => impl.removeImage(...a)
+export const uploadImages = (...a) => impl.uploadImages(...a)
+export const dismissMatch = (...a) => impl.dismissMatch(...a)
+export const requestContact = (...a) => impl.requestContact(...a)
+export const createFlag = (...a) => impl.createFlag(...a)
+export const listNotifications = (...a) => impl.listNotifications(...a)
+export const unreadCount = (...a) => impl.unreadCount(...a)
+export const markNotificationRead = (...a) => impl.markNotificationRead(...a)
+export const markAllNotificationsRead = (...a) => impl.markAllNotificationsRead(...a)
+export const listRequests = (...a) => impl.listRequests(...a)
+export const respondRequest = (...a) => impl.respondRequest(...a)
+export const cancelRequest = (...a) => impl.cancelRequest(...a)
+export const listMessages = (...a) => impl.listMessages(...a)
+export const sendMessage = (...a) => impl.sendMessage(...a)
+export const updateProfile = (...a) => impl.updateProfile(...a)
+export const adminSetHidden = (...a) => impl.adminSetHidden(...a)
+export const listAdminActions = (...a) => impl.listAdminActions(...a)
+export const closeStaleItems = (...a) => impl.closeStaleItems(...a)
+export const adminSuspend = (...a) => impl.adminSuspend(...a)
+export const adminResolveFlag = (...a) => impl.adminResolveFlag(...a)
+export const subscribeNotifications = (...a) => impl.subscribeNotifications(...a)
+export const subscribeMessages = (...a) => impl.subscribeMessages(...a)

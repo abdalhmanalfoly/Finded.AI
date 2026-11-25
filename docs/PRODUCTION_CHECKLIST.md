@@ -1,0 +1,26 @@
+# Production Checklist
+
+- [ ] Supabase project created and region selected.
+- [ ] Migrations 001–010 applied and reviewed (010 restores the `public.items` INSERT grant).
+- [ ] `item-images` bucket is private (Storage → Buckets) and `scripts/verify-live.mjs` passes the photo checks.
+- [ ] Map tiles: the picker loads tiles from `tile.openstreetmap.org`. That server is for light use only (see its tile usage policy); switch the URL in `src/lib/mapTiles.js` and the `img-src` in `vercel.json` to a tile provider with a plan before real traffic.
+- [ ] RLS and RPC authorization tested with anon, user, and admin roles.
+- [ ] First admin provisioned through a secure, documented process.
+- [ ] Auth site URL, redirect allow-list, email confirmation and SMTP configured.
+- [ ] Storage privacy decision documented; upload/download/delete tested.
+- [ ] Public item detail access tested while signed out.
+- [ ] Signup/login/logout/password recovery tested.
+- [ ] Lost/found CRUD, pagination, brand search and date filters tested.
+- [ ] Matching triggers, duplicate handling, explanations and notifications tested.
+- [ ] Contact request acceptance/rejection and messages tested.
+- [ ] Run `SUPABASE_URL=... SUPABASE_ANON_KEY=... node scripts/verify-live.mjs` (add TEST_EMAIL/TEST_PASSWORD for the write test) and get 0 failures.
+- [ ] Supabase Realtime enabled for `notifications` and `messages` (migration 007 adds them to the publication).
+- [ ] Optional: deploy `embed-image` and set its secrets (see docs/PHOTO_MATCHING_AND_REALTIME.md).
+- [ ] Admin moderation, audit-log tab and stale-report closing tested.
+- [ ] Schedule `close_stale_items(90)` (pg_cron) or run it from the admin Audit log tab.
+- [ ] Privacy/Terms text reviewed by a qualified person for your country.
+- [ ] Dependency audit reviewed; lockfile committed.
+- [ ] Unit, SQL, integration and browser E2E suites pass.
+- [ ] Vercel environment variables set without service-role secrets.
+- [ ] Production build and deployment verified.
+- [ ] Backups, monitoring, rate limiting and incident response configured.
