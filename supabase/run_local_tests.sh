@@ -19,7 +19,8 @@ for f in \
   migrations/009_scale_privacy_hardening.sql \
   migrations/010_restore_items_insert_privilege.sql \
   migrations/011_nemotron_item_embeddings.sql \
-  migrations/012_nemotron_allowed_origin.sql; do
+  migrations/012_nemotron_allowed_origin.sql \
+  migrations/013_nemotron_service_role_reads.sql; do
   psql -q -d findit_test -v ON_ERROR_STOP=1 -f "$f" >/dev/null
 done
 

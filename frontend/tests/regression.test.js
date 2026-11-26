@@ -147,6 +147,15 @@ test('migration 012 exposes the allowed origin only to service_role', () => {
   assert.match(sql, /grant execute on function public\.get_allowed_origin\(\) to service_role/)
 })
 
+test('migration 013 restores only service_role reads needed by the Edge Function', () => {
+  const sql = read('../../supabase/migrations/013_nemotron_service_role_reads.sql')
+  for (const table of ['items', 'item_images', 'item_embeddings']) {
+    assert.match(sql, new RegExp(`grant select on public\\.${table} to service_role`))
+  }
+  assert.ok(!/grant .*(insert|update|delete|all)/i.test(sql))
+  assert.ok(!/to anon|to authenticated/.test(sql))
+})
+
 test('frontend triggers Nemotron matching without waiting for inference', () => {
   const svc = read('../src/services/supabaseService.js')
   assert.match(svc, /functions\.invoke\('nemotron-match'/)

@@ -56,5 +56,5 @@ jobs:
       PGPASSWORD: postgres
     steps:
       - uses: actions/checkout@v4
-      - name: Migrations 001-012 and SQL tests (01 security/matching, 02 hardening, 03 grants, 04 Nemotron embeddings)
+      - name: Migrations 001-013 and SQL tests (01 security/matching, 02 hardening, 03 grants, 04 Nemotron embeddings)
         run: bash supabase/run_local_tests.sh
