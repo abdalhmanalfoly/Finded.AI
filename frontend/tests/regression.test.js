@@ -156,6 +156,16 @@ test('migration 013 restores only service_role reads needed by the Edge Function
   assert.ok(!/to anon|to authenticated/.test(sql))
 })
 
+test('migration 014 brands AI explanations without changing scores or decisions', () => {
+  const sql = read('../../supabase/migrations/014_nemotron_match_reasons.sql')
+  assert.ok(sql.includes('FindIt AI-powered decision (ranking score, not a probability)'))
+  assert.ok(sql.includes("'Similarity: ' || round(sim::numeric, 3)"))
+  assert.ok(sql.includes('Model: findit.ai & Nemotron (NVIDIA)'))
+  assert.match(sql, /where engine = 'ai' and ai_similarity is not null/)
+  const rebrand = sql.slice(sql.indexOf('-- Rebrand existing'))
+  assert.ok(!/set score|status\s*=|dismissed_by\s*=|ai_model\s*=/.test(rebrand))
+})
+
 test('frontend triggers Nemotron matching without waiting for inference', () => {
   const svc = read('../src/services/supabaseService.js')
   assert.match(svc, /functions\.invoke\('nemotron-match'/)

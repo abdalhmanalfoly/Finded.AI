@@ -23,7 +23,7 @@
 ## Deployment
 
 ```bash
-# Apply supabase/migrations/001..013 in order (SQL Editor or CLI).
+# Apply supabase/migrations/001..014 in order (SQL Editor or CLI).
 supabase functions deploy nemotron-match
 # Either a project secret:
 supabase secrets set ALLOWED_ORIGIN=https://your-site.example
@@ -39,7 +39,7 @@ supabase secrets set OPENROUTER_API_KEY=...
 
 Supabase project for this work: `https://gtbvqmuuyidmdhgmwsjv.supabase.co`. The MCP connection must be switched to this project before applying migration 011 or deploying.
 
-Current deployment state: migrations 011, 012 and 013 are applied, the Vault secrets `OPENROUTER_API_KEY` and `ALLOWED_ORIGIN=https://frontend-rho-two-51.vercel.app` are set (service-role-only RPC fallbacks), and `nemotron-match` version 2 is deployed with `verify_jwt: true`. Migration 013 grants the function's service role only `SELECT` on `items`, `item_images` and `item_embeddings` because the earlier hardening had revoked all table privileges; `anon`/`authenticated` grants and RLS policies are unchanged. A preflight `OPTIONS` from that origin now returns `200` with the matching `Access-Control-Allow-Origin`; an unconfigured origin still returns `403`. No browser env file contains the provider key.
+Current deployment state: migrations 011, 012, 013 and 014 are applied, the Vault secrets `OPENROUTER_API_KEY` and `ALLOWED_ORIGIN=https://frontend-rho-two-51.vercel.app` are set (service-role-only RPC fallbacks), and `nemotron-match` version 2 is deployed with `verify_jwt: true`. Migration 013 grants the function's service role only `SELECT` on `items`, `item_images` and `item_embeddings` because the earlier hardening had revoked all table privileges; `anon`/`authenticated` grants and RLS policies are unchanged. Migration 014 changes only the `reasons` text shown to users (FindIt AI-powered decision / Similarity / Model: findit.ai & Nemotron (NVIDIA)); score, status, dismissal state and stored `ai_model` are untouched. A preflight `OPTIONS` from that origin now returns `200` with the matching `Access-Control-Allow-Origin`; an unconfigured origin still returns `403`. No browser env file contains the provider key.
 
 ## Operational limits and privacy
 
@@ -51,9 +51,9 @@ Current deployment state: migrations 011, 012 and 013 are applied, the Vault sec
 ## Validation status
 
 - Live OpenRouter capability verification: passed (3 requests, see `NEMOTRON_MODEL_VERIFICATION.md`).
-- Migrations 011, 012 and 013 applied to `gtbvqmuuyidmdhgmwsjv`; `list_migrations` reports `20261126195441 / nemotron_item_embeddings`, `nemotron_allowed_origin` and `nemotron_service_role_reads`.
+- Migrations 011, 012, 013 and 014 applied to `gtbvqmuuyidmdhgmwsjv`; `list_migrations` reports `20261126195441 / nemotron_item_embeddings`, `nemotron_allowed_origin`, `nemotron_service_role_reads` and `nemotron_match_reasons`.
 - `nemotron-match` deployed (`verify_jwt: true`, version 2). A gateway check without a JWT returns `401`, and an anon-JWT check reaches the function and returns `Please log in first.` instead of `not configured`, confirming the Vault key path. Preflight from `https://frontend-rho-two-51.vercel.app` returns `200`; from `https://evil.example` returns `403 Origin not allowed.`.
-- Authenticated browser smoke test on 2026-11-26: two new users were created directly in `auth.users` (browser signup was rate-limited), one synthetic `lost` report and one synthetic `found` report were submitted through the deployed UI, and both AI jobs finished `done`. The two stored documents are `input_mode='passage'`, 4096 dimensions, model `nvidia/nemotron-3.5-embed-8b:free`; no image or query vector was stored. The single candidate is opposite-type, cross-owner, `engine='ai'`, `ai_similarity=0.883028`, `ai_model='nvidia/nemotron-3.5-embed-8b:free'`, `status='suggested'`, `dismissed_by=[]`. The UI shows the Nemotron reason and an 88 ranking score. Earlier rule-based matches were untouched, and no Lost→Lost, Found→Found or same-owner match was created. Edge logs show two authenticated `POST` calls returning `200` after migration 013, with no `403` from the configured origin; the earlier `502`s came from the missing service-role `SELECT` grant, now fixed.
-- Node helper tests: 5/5 passed. Frontend tests: 91/91 passed. `npm run build` passed.
-- CI applies migrations 001-013 with `pgvector/pgvector:pg16`; SQL suites were not run locally because `psql`/`docker` are unavailable.
+- Authenticated browser smoke test on 2026-11-26: two new users were created directly in `auth.users` (browser signup was rate-limited), one synthetic `lost` report and one synthetic `found` report were submitted through the deployed UI, and both AI jobs finished `done`. The two stored documents are `input_mode='passage'`, 4096 dimensions, model `nvidia/nemotron-3.5-embed-8b:free`; no image or query vector was stored. The single candidate is opposite-type, cross-owner, `engine='ai'`, `ai_similarity=0.883028`, `ai_model='nvidia/nemotron-3.5-embed-8b:free'`, `status='suggested'`, `dismissed_by=[]`. The UI shows the FindIt AI-powered explanation, the stored similarity and the `findit.ai & Nemotron (NVIDIA)` model label, with an 88 ranking score. Migration 014 also updated the pre-existing `contacted` AI row: its score `68`, `status='contacted'`, `dismissed_by=[]` and stored `ai_model` were preserved; only its explanation text changed. Earlier rule-based matches were untouched, and no Lost→Lost, Found→Found or same-owner match was created. Edge logs show two authenticated `POST` calls returning `200` after migration 013, with no `403` from the configured origin; the earlier `502`s came from the missing service-role `SELECT` grant, now fixed.
+- Node helper tests: 5/5 passed. Frontend tests: 92/92 passed. `npm run build` passed.
+- CI applies migrations 001-014 with `pgvector/pgvector:pg16`; SQL suites were not run locally because `psql`/`docker` are unavailable.
 - Still required before production: rotate the exposed OpenRouter key and update the Vault secret. AI accuracy has not been measured; `0.45` is an uncalibrated ranking cut-off, not a probability threshold.
