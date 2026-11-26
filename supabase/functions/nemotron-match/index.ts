@@ -1,9 +1,9 @@
 // Supabase Edge Function (Deno): Nemotron 3.5 Embed 8B document embeddings + asymmetric retrieval.
 // Deploy:  supabase functions deploy nemotron-match
-// Secrets: ALLOWED_ORIGIN=... plus OPENROUTER_API_KEY as a Supabase project secret
-//          or as the Vault secret 'OPENROUTER_API_KEY' (service-role RPC fallback).
+// Secrets: ALLOWED_ORIGIN and OPENROUTER_API_KEY as Supabase project secrets,
+//          or as Vault secrets (service-role RPC fallback) named the same.
 // SUPABASE_URL, SUPABASE_ANON_KEY and SUPABASE_SERVICE_ROLE_KEY are provided automatically by Supabase.
-// The OpenRouter key is read ONLY from the Supabase server-side secret store; never from a browser env var.
+// Provider and CORS configuration are read ONLY from server-side stores; never from a browser env var.
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.47.10'
 import {
   MODEL_ID, MODEL_VERSION, EMBEDDINGS_URL, EMBEDDING_DIMENSIONS,
@@ -11,13 +11,7 @@ import {
   parseEmbeddingResponse, contentHash, providerError,
 } from './nemotron.mjs'
 
-const allowedOrigin = Deno.env.get('ALLOWED_ORIGIN') ?? 'http://localhost:5173'
-const cors = {
-  'Access-Control-Allow-Origin': allowedOrigin,
-  'Vary': 'Origin',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
-const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { ...cors, 'Content-Type': 'application/json' } })
+const FALLBACK_ORIGIN = 'http://localhost:5173'
 
 function toBase64(buffer: ArrayBuffer): string {
   const bytes = new Uint8Array(buffer)
@@ -50,15 +44,31 @@ async function embed(payload: Record<string, unknown>, key: string): Promise<num
 }
 
 Deno.serve(async (req) => {
+  const url = Deno.env.get('SUPABASE_URL')!
+  const admin = createClient(url, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
+
+  // Prefer a project secret. Otherwise read the allowed browser origin from
+  // Vault through a service-role-only RPC. It is never read from a browser env var.
+  const envOrigin = Deno.env.get('ALLOWED_ORIGIN')?.trim()
+  let allowedOrigin = envOrigin || FALLBACK_ORIGIN
+  if (!envOrigin) {
+    const { data, error } = await admin.rpc('get_allowed_origin')
+    if (!error && typeof data === 'string' && data.trim()) allowedOrigin = data.trim()
+  }
+  const cors = {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Vary': 'Origin',
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  }
+  const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { ...cors, 'Content-Type': 'application/json' } })
+
   const origin = req.headers.get('Origin')
   if (origin && origin !== allowedOrigin) return json({ error: 'Origin not allowed.' }, 403)
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405)
 
-  const url = Deno.env.get('SUPABASE_URL')!
-  const admin = createClient(url, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
-  // Prefer a project secret. Otherwise read the same key from Supabase Vault
-  // through a service-role-only RPC. It is never read from a browser env var.
+  // Prefer a project secret. Otherwise read the provider key from Vault.
+  // Neither is ever read from a browser env var.
   let key = Deno.env.get('OPENROUTER_API_KEY') ?? null
   if (!key) {
     const { data, error } = await admin.rpc('get_openrouter_api_key')

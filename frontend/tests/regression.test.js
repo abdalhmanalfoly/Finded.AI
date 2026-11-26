@@ -139,6 +139,14 @@ test('migration 011 adds Nemotron pgvector documents, asymmetric retrieval and A
   assert.ok(!sql.includes('using ivfflat'))
 })
 
+test('migration 012 exposes the allowed origin only to service_role', () => {
+  const sql = read('../../supabase/migrations/012_nemotron_allowed_origin.sql')
+  assert.ok(sql.includes('get_allowed_origin'))
+  assert.ok(sql.includes("d.name = 'ALLOWED_ORIGIN'"))
+  assert.match(sql, /revoke all on function public\.get_allowed_origin\(\) from public, anon, authenticated/)
+  assert.match(sql, /grant execute on function public\.get_allowed_origin\(\) to service_role/)
+})
+
 test('frontend triggers Nemotron matching without waiting for inference', () => {
   const svc = read('../src/services/supabaseService.js')
   assert.match(svc, /functions\.invoke\('nemotron-match'/)

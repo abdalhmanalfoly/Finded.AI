@@ -18,7 +18,8 @@ for f in \
   migrations/008_private_images_signed_urls.sql \
   migrations/009_scale_privacy_hardening.sql \
   migrations/010_restore_items_insert_privilege.sql \
-  migrations/011_nemotron_item_embeddings.sql; do
+  migrations/011_nemotron_item_embeddings.sql \
+  migrations/012_nemotron_allowed_origin.sql; do
   psql -q -d findit_test -v ON_ERROR_STOP=1 -f "$f" >/dev/null
 done
 

@@ -23,20 +23,23 @@
 ## Deployment
 
 ```bash
-# Apply supabase/migrations/001..011 in order (SQL Editor or CLI).
+# Apply supabase/migrations/001..012 in order (SQL Editor or CLI).
 supabase functions deploy nemotron-match
+# Either a project secret:
 supabase secrets set ALLOWED_ORIGIN=https://your-site.example
+# Or the Supabase Vault secret used by this deployment:
+-- select vault.create_secret('https://your-site.example', 'ALLOWED_ORIGIN', 'Browser origin allowed to call Nemotron matching');
 # Either a project secret:
 supabase secrets set OPENROUTER_API_KEY=...
 # Or the Supabase Vault secret used by this deployment:
 -- select vault.create_secret('...', 'OPENROUTER_API_KEY', 'OpenRouter key for Nemotron matching');
 ```
 
-`OPENROUTER_API_KEY` must exist only as a Supabase server-side secret (project secret or Vault). The function reads a project secret first, then falls back to Vault through the service-role-only RPC `get_openrouter_api_key`. Never put it in `frontend/.env*`, a `VITE_` variable, GitHub, or chat. The service-role key is never exposed to the browser.
+`OPENROUTER_API_KEY` and `ALLOWED_ORIGIN` must exist only as Supabase server-side secrets (project secret or Vault). The function reads project secrets first, then falls back to Vault through the service-role-only RPCs `get_openrouter_api_key` and `get_allowed_origin`. Never put the provider key in `frontend/.env*`, a `VITE_` variable, GitHub, or chat. The service-role key is never exposed to the browser.
 
 Supabase project for this work: `https://gtbvqmuuyidmdhgmwsjv.supabase.co`. The MCP connection must be switched to this project before applying migration 011 or deploying.
 
-Current deployment state: migration 011 is applied, the Vault secret `OPENROUTER_API_KEY` is set (service-role-only RPC fallback), and `nemotron-match` is deployed with `verify_jwt: true`. `ALLOWED_ORIGIN` still uses the local default `http://localhost:5173`; set it to the deployed site URL before browser traffic from production. No browser env file contains the provider key.
+Current deployment state: migrations 011 and 012 are applied, the Vault secrets `OPENROUTER_API_KEY` and `ALLOWED_ORIGIN=https://frontend-rho-two-51.vercel.app` are set (service-role-only RPC fallbacks), and `nemotron-match` version 2 is deployed with `verify_jwt: true`. A preflight `OPTIONS` from that origin now returns `200` with the matching `Access-Control-Allow-Origin`; an unconfigured origin still returns `403`. No browser env file contains the provider key.
 
 ## Operational limits and privacy
 
@@ -48,9 +51,9 @@ Current deployment state: migration 011 is applied, the Vault secret `OPENROUTER
 ## Validation status
 
 - Live OpenRouter capability verification: passed (3 requests, see `NEMOTRON_MODEL_VERIFICATION.md`).
-- Migration 011 applied to `gtbvqmuuyidmdhgmwsjv`; `list_migrations` reports `20261126195441 / nemotron_item_embeddings`.
-- `nemotron-match` deployed (`verify_jwt: true`, version 1). A gateway check without a JWT returns `401`, and an anon-JWT check reaches the function and returns `Please log in first.` instead of `not configured`, confirming the Vault key path.
+- Migrations 011 and 012 applied to `gtbvqmuuyidmdhgmwsjv`; `list_migrations` reports `20261126195441 / nemotron_item_embeddings` and the `nemotron_allowed_origin` migration.
+- `nemotron-match` deployed (`verify_jwt: true`, version 2). A gateway check without a JWT returns `401`, and an anon-JWT check reaches the function and returns `Please log in first.` instead of `not configured`, confirming the Vault key path. Preflight from `https://frontend-rho-two-51.vercel.app` returns `200`; from `https://evil.example` returns `403 Origin not allowed.`.
 - One-pair live integration run on 2026-11-26: one synthetic `lost` item and one synthetic `found` item owned by different existing users. Three requests returned 4096-dimensional vectors from `nvidia/nemotron-3.5-embed-8b` (usage 49/34/40 tokens). Retrieval returned exactly one opposite-type candidate at similarity `0.728`. Both documents were stored with `input_mode='passage'`; no query vector was stored. The pre-existing `contacted` match stayed `engine='rule'`, `score=70`, `ai_similarity=null`, confirming user-acted rows are not overwritten. Both AI jobs finished `done`.
 - Node helper tests: 5/5 passed. Frontend tests: 89/89 passed. `npm run build` passed.
-- CI applies migrations 001-011 with `pgvector/pgvector:pg16`; SQL suites were not run locally because `psql`/`docker` are unavailable.
-- Still required before production: set `ALLOWED_ORIGIN` to the deployed site URL, rotate the exposed OpenRouter key and update the Vault secret, and run one authenticated browser/HTTP smoke test with a real user session. AI accuracy has not been measured; `0.45` is an uncalibrated ranking cut-off, not a probability threshold.
+- CI applies migrations 001-012 with `pgvector/pgvector:pg16`; SQL suites were not run locally because `psql`/`docker` are unavailable.
+- Still required before production: rotate the exposed OpenRouter key and update the Vault secret, and run one authenticated browser/HTTP smoke test with a real user session. AI accuracy has not been measured; `0.45` is an uncalibrated ranking cut-off, not a probability threshold.

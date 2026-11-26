@@ -162,9 +162,10 @@ Apply SQL files in `supabase/migrations/` in numeric order using the Supabase SQ
 009_scale_privacy_hardening.sql
 010_restore_items_insert_privilege.sql
 011_nemotron_item_embeddings.sql
+012_nemotron_allowed_origin.sql
 ```
 
-Migration 010 is required on already deployed projects to restore least-privilege INSERT on `items` and `item_images` after the earlier security hardening. Migration 011 adds pgvector document embeddings for `nvidia/nemotron-3.5-embed-8b:free` and the asymmetric retrieval RPCs; see `docs/NEMOTRON_INTEGRATION.md`. See `docs/DATABASE_SETUP.md` and `docs/DATABASE_SCHEMA.md`.
+Migration 010 is required on already deployed projects to restore least-privilege INSERT on `items` and `item_images` after the earlier security hardening. Migration 011 adds pgvector document embeddings for `nvidia/nemotron-3.5-embed-8b:free` and the asymmetric retrieval RPCs. Migration 012 adds the service-role-only `get_allowed_origin()` RPC used by `nemotron-match`; see `docs/NEMOTRON_INTEGRATION.md`. See `docs/DATABASE_SETUP.md` and `docs/DATABASE_SCHEMA.md`.
 
 ## Local development commands
 
