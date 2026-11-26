@@ -122,6 +122,30 @@ test('frontend wires realtime, embeddings and coordinates through the service la
   assert.match(read('../src/pages/Requests.jsx'), /subscribeMessages/)
 })
 
+test('migration 011 adds Nemotron pgvector documents, asymmetric retrieval and AI-owned matches', () => {
+  const sql = read('../../supabase/migrations/011_nemotron_item_embeddings.sql')
+  for (const needle of [
+    'nvidia/nemotron-3.5-embed-8b:free', 'extensions.vector(4096)',
+    'match_items_by_embedding', 'persist_ai_matches', 'input_mode', 'engine',
+    'get_openrouter_api_key',
+  ]) {
+    assert.ok(sql.includes(needle), `${needle} defined`)
+  }
+  assert.match(sql, /revoke all on public\.item_embeddings from anon, authenticated/)
+  assert.match(sql, /revoke all on function public\.match_items_by_embedding/)
+  assert.match(sql, /Only passage embeddings may be stored/)
+  // pgvector ANN indexes cap vector columns at 2000 dimensions; 4096 needs an exact scan.
+  assert.ok(!sql.includes('using hnsw'))
+  assert.ok(!sql.includes('using ivfflat'))
+})
+
+test('frontend triggers Nemotron matching without waiting for inference', () => {
+  const svc = read('../src/services/supabaseService.js')
+  assert.match(svc, /functions\.invoke\('nemotron-match'/)
+  assert.match(svc, /requestAiMatching\(data\.id\) \/\/ fire-and-forget/)
+  assert.ok(!/OPENROUTER_API_KEY/.test(svc))
+})
+
 test('CSP allows only the OpenStreetMap frame and geolocation for self', () => {
   const v = read('../vercel.json')
   assert.match(v, /frame-src https:\/\/www\.openstreetmap\.org/)

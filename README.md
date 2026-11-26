@@ -141,7 +141,8 @@ See `docs/ENVIRONMENT_VARIABLES.md` and `docs/AUTH_TEST_POLICY.md`.
 6. Configure Auth email templates and confirmation settings according to your environment.
 7. Create the first admin using the SQL in `docs/DEPLOYMENT_GUIDE.md`.
 8. Deploy the `embed-image` Edge Function only if you want optional image-embedding enrichment; set `EMBEDDING_URL` and `ALLOWED_ORIGIN` as documented in `docs/PHOTO_MATCHING_AND_REALTIME.md`.
-9. Enable Realtime for the tables listed in migration 007.
+9. Deploy `nemotron-match` with `verify_jwt: true`. Store `OPENROUTER_API_KEY` only as a Supabase project secret or Vault secret (never a `VITE_` variable), and set `ALLOWED_ORIGIN` to your deployed site URL. See `docs/NEMOTRON_INTEGRATION.md`.
+10. Enable Realtime for the tables listed in migration 007.
 
 No Auth rate limits or security protections were changed for this release.
 
@@ -160,9 +161,10 @@ Apply SQL files in `supabase/migrations/` in numeric order using the Supabase SQ
 008_private_images_signed_urls.sql
 009_scale_privacy_hardening.sql
 010_restore_items_insert_privilege.sql
+011_nemotron_item_embeddings.sql
 ```
 
-Migration 010 is required on already deployed projects to restore least-privilege INSERT on `items` and `item_images` after the earlier security hardening. See `docs/DATABASE_SETUP.md` and `docs/DATABASE_SCHEMA.md`.
+Migration 010 is required on already deployed projects to restore least-privilege INSERT on `items` and `item_images` after the earlier security hardening. Migration 011 adds pgvector document embeddings for `nvidia/nemotron-3.5-embed-8b:free` and the asymmetric retrieval RPCs; see `docs/NEMOTRON_INTEGRATION.md`. See `docs/DATABASE_SETUP.md` and `docs/DATABASE_SCHEMA.md`.
 
 ## Local development commands
 

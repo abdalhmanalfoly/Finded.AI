@@ -35,3 +35,11 @@ create or replace function storage.foldername(name text) returns text[] language
 $$;
 grant execute on function storage.foldername(text) to anon, authenticated;
 grant select, insert, update, delete on storage.objects to anon, authenticated;
+
+-- Minimal Vault stand-in for migration 011's service-role-only key lookup.
+create schema if not exists vault;
+create table if not exists vault.decrypted_secrets (
+  name text,
+  decrypted_secret text
+);
+grant usage on schema vault to service_role;

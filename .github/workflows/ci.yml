@@ -19,7 +19,9 @@ jobs:
       - name: Unit, render (English/Arabic) and static security tests
         run: npm test
       - name: Edge Function helper tests
-        run: node --test ../supabase/functions/embed-image/embedding.test.mjs
+        run: |
+          node --test ../supabase/functions/embed-image/embedding.test.mjs
+          node --test ../supabase/functions/nemotron-match/nemotron.test.mjs
       - run: npm run build
 
   e2e:
@@ -41,7 +43,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres:16
+        image: pgvector/pgvector:pg16
         env:
           POSTGRES_PASSWORD: postgres
         ports: ['5432:5432']
@@ -54,5 +56,5 @@ jobs:
       PGPASSWORD: postgres
     steps:
       - uses: actions/checkout@v4
-      - name: Migrations 001-010 and SQL tests (01 security/matching, 02 hardening, 03 grants)
+      - name: Migrations 001-011 and SQL tests (01 security/matching, 02 hardening, 03 grants, 04 Nemotron embeddings)
         run: bash supabase/run_local_tests.sh

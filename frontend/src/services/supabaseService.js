@@ -184,6 +184,19 @@ async function embedItemImages(itemId) {
   }
 }
 
+/** Asks the `nemotron-match` Edge Function to build document embeddings and AI match candidates. */
+async function requestAiMatching(itemId) {
+  try {
+    const result = await supabase.functions.invoke('nemotron-match', { body: { itemId } })
+    recordSubmitStep('rpc.nemotron-match', result.error
+      ? { ...errorInfo(result.error), hasUser: true }
+      : { ok: true, hasUser: true })
+  } catch (e) {
+    // Asynchronous pipeline: a failure never blocks saving the report.
+    recordSubmitStep('rpc.nemotron-match', { ...errorInfo(e), hasUser: true })
+  }
+}
+
 const hasCoords = (v) => v.lat !== '' && v.lat != null && v.lng !== '' && v.lng != null && Number.isFinite(Number(v.lat)) && Number.isFinite(Number(v.lng))
 
 const toRow = (v) => {
@@ -208,6 +221,7 @@ export async function createItem(type, values, files = []) {
   if (error) throw new Error(permissionMessage(error, 'You don’t have permission to create a report.'))
   try {
     const imageProblem = files.length ? await uploadImages(data.id, files) : null
+    requestAiMatching(data.id) // fire-and-forget: never delays report submission
     recordSubmitStep('submit.success', { ok: true, hasUser: Boolean(uid) })
     return { id: data.id, imageProblem }
   } catch (e) {
@@ -231,12 +245,14 @@ export async function updateItem(id, values) {
   const { data, error } = await supabase.from('items').update(toRow(values)).eq('id', id).select('id').maybeSingle()
   if (error) fail(error)
   if (!data) throw new Error(translate('This report could not be updated. It may have been removed or you may not have permission.'))
+  requestAiMatching(id) // refresh embeddings/query when the description changed
 }
 
 export async function setItemStatus(id, status) {
   const { data, error } = await supabase.from('items').update({ status }).eq('id', id).select('id').maybeSingle()
   if (error) fail(error)
   if (!data) throw new Error(translate('This report status could not be changed. It may have been removed or you may not have permission.'))
+  requestAiMatching(id)
 }
 
 export async function removeImage(image) {
